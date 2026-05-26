@@ -1,11 +1,12 @@
-#include "raylib.h"
-#include <iostream>
+#include "application.h"
 
-
-
-
-int main(void)
+int main()
 {
+    Application app;
 
-	return 0;
+    app.Initialize();
+    app.Run();
+    app.Shutdown();
+
+    return 0;
 }
