@@ -1,6 +1,9 @@
 #pragma once
 
 #include <raylib.h>
+#include <components.h>
+#include <movementsystem.h>
+#include <rendersystem.h>
 
 class Application
 {
@@ -10,8 +13,14 @@ public:
     void Shutdown();
 
 private:
-    Vector2 m_position = {0.0f, 0.0f};
-    float m_speed = 300.0f;
+    TransformComponent m_PlayerTransform;
+    VelocityComponent m_PlayerVelocity;
+    RenderComponent m_PlayerRender;
+
+    float m_PlayerSpeed = 300.0f;
+
+    MovementSystem m_MovementSystem;
+    RenderSystem m_RenderSystem;
 
     void ProcessInput();
     void Update(float dt);

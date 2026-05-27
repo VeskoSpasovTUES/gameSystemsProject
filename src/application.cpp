@@ -8,8 +8,16 @@ void Application::Initialize()
     const int window_width = 1280;
     const int window_height = 720;
 
+    m_PlayerTransform.Position = {100.0f, 100.0f};
+
+    m_PlayerVelocity.Velocity = {0.0f, 0.0f};
+
+    m_PlayerRender.Width = 50;
+    m_PlayerRender.Height = 50;
+    m_PlayerRender.Color = GREEN;
+
     InitWindow(window_width, window_height, "Game");
-    SetTargetFPS(360);
+    SetTargetFPS(60);
 }
 
 void Application::Run()
@@ -35,41 +43,29 @@ void Application::ProcessInput()
 
 void Application::Update(float dt)
 {
+    m_PlayerVelocity.Velocity = { 0.0f, 0.0f };
+
     if (Input::IsKeyDown(KEY_W))
     {
-        m_position.y -= m_speed * dt;
+        m_PlayerVelocity.Velocity.y = -m_PlayerSpeed;
     }
-    if (Input::IsKeyDown(KEY_A))
-    {
-        m_position.x -= m_speed * dt;
-    }
+
     if (Input::IsKeyDown(KEY_S))
     {
-        m_position.y += m_speed * dt;
+        m_PlayerVelocity.Velocity.y = m_PlayerSpeed;
     }
+
+    if (Input::IsKeyDown(KEY_A))
+    {
+        m_PlayerVelocity.Velocity.x = -m_PlayerSpeed;
+    }
+
     if (Input::IsKeyDown(KEY_D))
     {
-        m_position.x += m_speed * dt;
-    }
-    if (m_position.x < 0)
-    {
-        m_position.x = 0;
+        m_PlayerVelocity.Velocity.x = m_PlayerSpeed;
     }
 
-    if (m_position.x > 1230)
-    {
-        m_position.x = 1230;
-    }
-
-    if (m_position.y < 0)
-    {
-        m_position.y = 0;
-    }
-
-    if (m_position.y > 670)
-    {
-        m_position.y = 670;
-    }
+    m_MovementSystem.Update(m_PlayerTransform, m_PlayerVelocity, dt);
 }
 
 void Application::Render()
@@ -78,7 +74,7 @@ void Application::Render()
 
     ClearBackground(BLACK);
 
-    DrawRectangle((int)m_position.x, (int)m_position.y, 50, 50, GREEN);
+    m_RenderSystem.Render(m_PlayerTransform, m_PlayerRender);
 
     DrawFPS(10, 10);
 
