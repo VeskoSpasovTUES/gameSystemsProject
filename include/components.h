@@ -19,3 +19,8 @@ struct RenderComponent
 
     Color Color;
 };
+
+struct RectangleColliderComponent 
+{
+    Vector2 Size;
+};
