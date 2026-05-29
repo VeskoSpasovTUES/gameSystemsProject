@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Components.h"
+#include "ecs/components/Components.h"
 
 class MovementSystem
 {

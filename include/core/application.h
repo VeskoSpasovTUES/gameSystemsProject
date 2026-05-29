@@ -1,10 +1,12 @@
 #pragma once
 
 #include <raylib.h>
-#include <components.h>
-#include <movementsystem.h>
-#include <rendersystem.h>
-#include <rectanglecollisionsystem.h>
+#include <vector>
+#include <ecs/entities/wall.h>
+#include <ecs/components/components.h>
+#include <ecs/systems/movementsystem.h>
+#include <ecs/systems/rendersystem.h>
+#include <ecs/systems/rectanglecollisionsystem.h>
 
 class Application
 {
@@ -27,16 +29,11 @@ private:
     RenderSystem m_RenderSystem;
     RectangleCollisionSystem m_CollisionSystem;
 
-    //Obstacle
-    TransformComponent m_WallTransform;
-    RectangleColliderComponent m_WallCollider;
-    RenderComponent m_WallRender;
-
-    //Debug variables
-    Vector2 m_DebugContactPoint = { 0,0 };
-    bool m_Hit = false;
+    //Obstacles
+    std::vector<Wall> m_Walls;
 
     void ProcessInput();
     void Update(float dt);
     void Render();
+    void HandleCollisions(float dt);
 };
