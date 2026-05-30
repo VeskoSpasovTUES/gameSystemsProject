@@ -5,19 +5,21 @@
 #include <raymath.h>
 #include <iostream>
 #include <algorithm>
+#include <imgui.h>
+#include <rlImGui.h>
 
 void Application::Initialize()
 {
     //Initialize player
-    m_PlayerTransform.Position = {100.0f, 100.0f};
+    m_Scene.Player.Transform.Position = {300.0f, 250.0f};
 
-    m_PlayerVelocity.Velocity = {0.0f, 0.0f};
+    m_Scene.Player.Velocity.Velocity = {0.0f, 0.0f};
 
-    m_PlayerRender.Width = 50;
-    m_PlayerRender.Height = 50;
-    m_PlayerRender.Color = GREEN;
+    m_Scene.Player.Render.Width = 50;
+    m_Scene.Player.Render.Height = 50;
+    m_Scene.Player.Render.Color = GREEN;
 
-    m_PlayerCollider.Size = { 50.0f, 50.0f };
+    m_Scene.Player.Collider.Size = { 50.0f, 50.0f };
 
     //Initialize wall1
     Wall wall1;
@@ -30,7 +32,7 @@ void Application::Initialize()
     wall1.Render.Height = 300;
     wall1.Render.Color = RED;
 
-    m_Walls.push_back(wall1);
+    m_Scene.Walls.push_back(wall1);
 
     //Initialize wall2
     Wall wall2;
@@ -43,7 +45,7 @@ void Application::Initialize()
     wall2.Render.Height = 50;
     wall2.Render.Color = BLUE;
 
-    m_Walls.push_back(wall2);
+    m_Scene.Walls.push_back(wall2);
 
     //Initialize wall3
     Wall wall3;
@@ -56,7 +58,7 @@ void Application::Initialize()
     wall3.Render.Height = 50;
     wall3.Render.Color = BLUE;
 
-    m_Walls.push_back(wall3);
+    m_Scene.Walls.push_back(wall3);
 
     //Initialize window
     const int window_width = 1280;
@@ -64,6 +66,14 @@ void Application::Initialize()
 
     InitWindow(window_width, window_height, "Game");
     SetTargetFPS(60);
+
+    rlImGuiSetup(true);
+
+    //Initialize camera
+    m_Camera.target = m_Scene.Player.Transform.Position;
+    m_Camera.offset = { 640.0f, 360.0f };
+    m_Camera.rotation = 0.0f;
+    m_Camera.zoom = 1.0f;
 }
 
 void Application::Run()
@@ -80,6 +90,8 @@ void Application::Run()
 
 void Application::Shutdown()
 {
+    rlImGuiShutdown();
+
     CloseWindow();
 }
 
@@ -89,30 +101,46 @@ void Application::ProcessInput()
 
 void Application::Update(float dt)
 {
-    m_PlayerVelocity.Velocity = { 0.0f, 0.0f };
+    m_Scene.Player.Velocity.Velocity = { 0.0f, 0.0f };
 
     if (Input::IsKeyDown(KEY_W))
     {
-        m_PlayerVelocity.Velocity.y = -m_PlayerSpeed;
+        m_Scene.Player.Velocity.Velocity.y = -m_PlayerSpeed;
     }
 
     if (Input::IsKeyDown(KEY_S))
     {
-        m_PlayerVelocity.Velocity.y = m_PlayerSpeed;
+        m_Scene.Player.Velocity.Velocity.y = m_PlayerSpeed;
     }
 
     if (Input::IsKeyDown(KEY_A))
     {
-        m_PlayerVelocity.Velocity.x = -m_PlayerSpeed;
+        m_Scene.Player.Velocity.Velocity.x = -m_PlayerSpeed;
     }
 
     if (Input::IsKeyDown(KEY_D))
     {
-        m_PlayerVelocity.Velocity.x = m_PlayerSpeed;
+        m_Scene.Player.Velocity.Velocity.x = m_PlayerSpeed;
     }
 
-    //Check for collisions and resolve them
     HandleCollisions(dt);
+
+    UpdateCamera();
+}
+
+void Application::UpdateCamera()
+{
+    m_Camera.target.x = m_Scene.Player.Transform.Position.x + m_Scene.Player.Render.Width * 0.5f;
+    m_Camera.target.y = m_Scene.Player.Transform.Position.y + m_Scene.Player.Render.Height * 0.5f;
+
+    float visibleWidth = GetScreenWidth() / m_Camera.zoom;
+    float visibleHeight = GetScreenHeight() / m_Camera.zoom;
+
+    float halfWidth = visibleWidth * 0.5f;
+    float halfHeight = visibleHeight * 0.5f;
+
+    m_Camera.target.x = std::clamp(m_Camera.target.x, halfWidth, WORLD_WIDTH - halfWidth);
+    m_Camera.target.y = std::clamp(m_Camera.target.y, halfHeight, WORLD_HEIGHT - halfHeight);
 }
 
 void Application::Render()
@@ -121,18 +149,57 @@ void Application::Render()
 
     ClearBackground(BLACK);
 
-    m_RenderSystem.Render(m_PlayerTransform, m_PlayerRender);
-    for (const Wall& wall : m_Walls)
-    {
-        m_RenderSystem.Render(
-            wall.Transform,
-            wall.Render
-        );
-    }
+    BeginMode2D(m_Camera);
+    RenderGame();
+    EndMode2D();
 
-    DrawFPS(10, 10);
+    rlImGuiBegin();
+    RenderDebugUI();
+    rlImGuiEnd();
 
     EndDrawing();
+}
+
+void Application::RenderGame()
+{
+    m_RenderSystem.Render(m_Scene.Player.Transform, m_Scene.Player.Render);
+
+    for (const Wall& wall : m_Scene.Walls)
+    {
+        m_RenderSystem.Render(wall.Transform, wall.Render);
+    }
+
+    //Debug outlines
+    DrawRectangleLines(0, 0, (int)WORLD_WIDTH, (int)WORLD_HEIGHT, YELLOW);
+}
+
+void Application::RenderDebugUI()
+{
+    ImGui::Begin("Debug");
+
+    ImGui::Text("FPS: %d", GetFPS());
+
+    ImGui::Separator();
+
+    ImGui::Text("Position: %.2f %.2f", m_Scene.Player.Transform.Position.x, m_Scene.Player.Transform.Position.y);
+    ImGui::Text("Velocity: %.2f %.2f", m_Scene.Player.Velocity.Velocity.x, m_Scene.Player.Velocity.Velocity.y);
+
+    ImGui::Separator();
+
+    ImGui::Text("Camera Target: %.2f %.2f", m_Camera.target.x, m_Camera.target.y);
+    ImGui::Text("Camera Zoom: %.2f", m_Camera.zoom);
+
+    ImGui::Separator();
+
+    ImGui::Text("Walls: %d", (int)m_Scene.Walls.size());
+
+    ImGui::Separator();
+
+    ImGui::SliderFloat("Player Speed", &m_PlayerSpeed, 50.0f, 1000.0f);
+
+    ImGui::SliderFloat("Camera Zoom", &m_Camera.zoom, 0.5f, 4.0f);
+
+    ImGui::End();
 }
 
 void Application::HandleCollisions(float dt) 
@@ -148,11 +215,11 @@ void Application::HandleCollisions(float dt)
 
         int nearestWall = -1;
 
-        for (int i = 0; i < m_Walls.size(); i++)
+        for (int i = 0; i < m_Scene.Walls.size(); i++)
         {
             float hitTime;
 
-            bool hit = m_CollisionSystem.DynamicRectangleVsRectangle(m_PlayerTransform, m_PlayerCollider, m_PlayerVelocity, m_Walls[i].Transform, m_Walls[i].Collider, contactPoint, contactNormal, hitTime, remainingTime);
+            bool hit = m_CollisionSystem.DynamicRectangleVsRectangle(m_Scene.Player.Transform, m_Scene.Player.Collider, m_Scene.Player.Velocity, m_Scene.Walls[i].Transform, m_Scene.Walls[i].Collider, contactPoint, contactNormal, hitTime, remainingTime);
 
             if (hit)
             {
@@ -171,15 +238,15 @@ void Application::HandleCollisions(float dt)
 
             float finalHitTime;
 
-            m_CollisionSystem.DynamicRectangleVsRectangle(m_PlayerTransform, m_PlayerCollider, m_PlayerVelocity, m_Walls[nearestWall].Transform, m_Walls[nearestWall].Collider, finalContactPoint, finalContactNormal, finalHitTime, remainingTime);
+            m_CollisionSystem.DynamicRectangleVsRectangle(m_Scene.Player.Transform, m_Scene.Player.Collider, m_Scene.Player.Velocity, m_Scene.Walls[nearestWall].Transform, m_Scene.Walls[nearestWall].Collider, finalContactPoint, finalContactNormal, finalHitTime, remainingTime);
 
-            m_CollisionSystem.ResolveDynamicRectangleVsRectangle(m_PlayerTransform, m_PlayerVelocity, finalContactNormal, finalHitTime, remainingTime);
+            m_CollisionSystem.ResolveDynamicRectangleVsRectangle(m_Scene.Player.Transform, m_Scene.Player.Velocity, finalContactNormal, finalHitTime, remainingTime);
 
             remainingTime *= (1.0f - finalHitTime);
         }
         else
         {
-            m_MovementSystem.Update(m_PlayerTransform, m_PlayerVelocity, remainingTime);
+            m_MovementSystem.Update(m_Scene.Player.Transform, m_Scene.Player.Velocity, remainingTime);
             break;
         }
     }
