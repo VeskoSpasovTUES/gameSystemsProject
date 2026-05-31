@@ -10,6 +10,18 @@
 
 void Application::Initialize()
 {
+    //Initialize window
+    const int window_width = 1280;
+    const int window_height = 720;
+
+    InitWindow(window_width, window_height, "Game");
+    SetTargetFPS(60);
+
+    rlImGuiSetup(true);
+
+    //Load Textures
+    m_ResourceManager.LoadTextureResource("rabbit", RESOURCES_PATH "rabbit.png");
+
     //Initialize player
     m_Scene.Player.Transform.Position = {300.0f, 250.0f};
 
@@ -21,10 +33,12 @@ void Application::Initialize()
 
     m_Scene.Player.Collider.Size = { 50.0f, 50.0f };
 
+    m_Scene.Player.Sprite.TextureId = "rabbit";
+
     //Initialize wall1
     Wall wall1;
 
-    wall1.Transform.Position = { 500, 200 };
+    wall1.Transform.Position = { 550, 350 };
 
     wall1.Collider.Size = { 100, 300 };
 
@@ -37,7 +51,7 @@ void Application::Initialize()
     //Initialize wall2
     Wall wall2;
 
-    wall2.Transform.Position = { 200, 500 };
+    wall2.Transform.Position = { 400, 525 };
 
     wall2.Collider.Size = { 400, 50 };
 
@@ -50,7 +64,7 @@ void Application::Initialize()
     //Initialize wall3
     Wall wall3;
 
-    wall3.Transform.Position = { 250, 400 };
+    wall3.Transform.Position = { 425, 425 };
 
     wall3.Collider.Size = { 350, 50 };
 
@@ -59,15 +73,6 @@ void Application::Initialize()
     wall3.Render.Color = BLUE;
 
     m_Scene.Walls.push_back(wall3);
-
-    //Initialize window
-    const int window_width = 1280;
-    const int window_height = 720;
-
-    InitWindow(window_width, window_height, "Game");
-    SetTargetFPS(60);
-
-    rlImGuiSetup(true);
 
     //Initialize camera
     m_Camera.target = m_Scene.Player.Transform.Position;
@@ -162,7 +167,8 @@ void Application::Render()
 
 void Application::RenderGame()
 {
-    m_RenderSystem.Render(m_Scene.Player.Transform, m_Scene.Player.Render);
+    Texture2D& playerTexture = m_ResourceManager.GetTexture(m_Scene.Player.Sprite.TextureId);
+    m_RenderSystem.Render(m_Scene.Player.Transform, m_Scene.Player.Collider, m_Scene.Player.Sprite, playerTexture);
 
     for (const Wall& wall : m_Scene.Walls)
     {
@@ -170,7 +176,15 @@ void Application::RenderGame()
     }
 
     //Debug outlines
-    DrawRectangleLines(0, 0, (int)WORLD_WIDTH, (int)WORLD_HEIGHT, YELLOW);
+    if(m_ShowColliders) 
+    {
+        DrawRectangleLines(0, 0, (int)WORLD_WIDTH, (int)WORLD_HEIGHT, YELLOW);
+        DrawRectangleLines((int)m_Scene.Player.Transform.Position.x - (int)m_Scene.Player.Collider.Size.x * 0.5f, (int)m_Scene.Player.Transform.Position.y - (int)m_Scene.Player.Collider.Size.y * 0.5f, (int)m_Scene.Player.Collider.Size.x, (int)m_Scene.Player.Collider.Size.y, YELLOW);
+        for (const Wall& wall : m_Scene.Walls)
+        {
+            DrawRectangleLines((int)wall.Transform.Position.x - (int)wall.Collider.Size.x * 0.5f, (int)wall.Transform.Position.y - (int)wall.Collider.Size.y * 0.5f, (int)wall.Collider.Size.x, (int)wall.Collider.Size.y, YELLOW);
+        }
+    }
 }
 
 void Application::RenderDebugUI()
@@ -196,8 +210,11 @@ void Application::RenderDebugUI()
     ImGui::Separator();
 
     ImGui::SliderFloat("Player Speed", &m_PlayerSpeed, 50.0f, 1000.0f);
-
     ImGui::SliderFloat("Camera Zoom", &m_Camera.zoom, 0.5f, 4.0f);
+
+    ImGui::Separator();
+
+    ImGui::Checkbox("Show Colliders", &m_ShowColliders);
 
     ImGui::End();
 }

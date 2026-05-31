@@ -8,10 +8,13 @@ bool RectangleCollisionSystem::RayVsRectangle(const Vector2& rayOrigin, const Ve
 	contactPoint = { 0,0 };
 	contactNormal = { 0,0 };
 
+	Vector2 rectTopLeft = {targetTransform.Position.x - targetCollider.Size.x * 0.5f, targetTransform.Position.y - targetCollider.Size.y * 0.5f};
+	Vector2 rectTopRight = { targetTransform.Position.x + targetCollider.Size.x * 0.5f, targetTransform.Position.y + targetCollider.Size.y * 0.5f };
+
 	Vector2 direction = rayDirection;
 
-	Vector2 nearVector = Vector2Divide(Vector2Subtract(targetTransform.Position, rayOrigin), direction);
-	Vector2 farVector = Vector2Divide(Vector2Subtract(Vector2Add(targetTransform.Position, targetCollider.Size), rayOrigin), direction);
+	Vector2 nearVector = Vector2Divide(Vector2Subtract(rectTopLeft, rayOrigin), direction);
+	Vector2 farVector = Vector2Divide(Vector2Subtract(rectTopRight, rayOrigin), direction);
 
 	if (std::isnan(nearVector.y) || std::isnan(nearVector.x)) return false;
 	if (std::isnan(farVector.y) || std::isnan(farVector.x)) return false;
@@ -51,12 +54,12 @@ bool RectangleCollisionSystem::DynamicRectangleVsRectangle(const TransformCompon
 	if (dynamicVelocity.Velocity.x == 0 && dynamicVelocity.Velocity.y == 0) return false;
 
 	TransformComponent expandedTargetTransform; 
-	expandedTargetTransform.Position = Vector2Subtract(targetTransform.Position, Vector2Scale(dynamicCollider.Size, 0.5f));
+	expandedTargetTransform.Position = targetTransform.Position;
 
 	RectangleColliderComponent expandedTargetCollider;
 	expandedTargetCollider.Size = Vector2Add(targetCollider.Size, dynamicCollider.Size);
 
-	Vector2 rayOrigin = Vector2Add(dynamicTransform.Position, Vector2Scale(dynamicCollider.Size, 0.5f));
+	Vector2 rayOrigin = dynamicTransform.Position;
 
 	if (RayVsRectangle(rayOrigin, Vector2Scale(dynamicVelocity.Velocity, dt), expandedTargetTransform, expandedTargetCollider, contactPoint, contactNormal, hitTime))
 		return (hitTime >= 0.0f && hitTime <= 1.0f);

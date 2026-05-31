@@ -8,4 +8,5 @@ struct Player
     VelocityComponent Velocity;
     RenderComponent Render;
     RectangleColliderComponent Collider;
+    SpriteComponent Sprite;
 };

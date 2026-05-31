@@ -1,6 +1,7 @@
 #pragma once
 
 #include <raylib.h>
+#include <string>
 
 struct TransformComponent
 {
@@ -23,4 +24,12 @@ struct RenderComponent
 struct RectangleColliderComponent 
 {
     Vector2 Size;
+};
+
+struct SpriteComponent
+{
+    std::string TextureId;
+
+    float Rotation = 0.0f;
+    float Scale = 1.0f;
 };
